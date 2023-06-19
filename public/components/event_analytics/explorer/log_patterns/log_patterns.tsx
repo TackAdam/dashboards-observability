@@ -14,7 +14,7 @@ import {
 } from '../../../../../common/constants/explorer';
 import { PatternTableData, Query as IQuery } from '../../../../../common/types/explorer';
 import { TabContext, useFetchPatterns } from '../../hooks';
-import { selectPatterns } from '../../redux/slices/patterns_slice';
+import { selectPatterns, setPatterns } from '../../redux/slices/patterns_slice';
 import { changeQuery, selectQueries } from '../../redux/slices/query_slice';
 import { formatError } from '../../utils';
 import { PatternsHeader } from './patterns_header';
@@ -51,7 +51,9 @@ const EventPatterns = ({
 
   // refresh patterns on opening page
   useEffect(() => {
-    onPatternSelection('');
+    // onPatternSelection('');
+    // setPatterns('Dest');
+    console.log('Triggered useEffect from patterns');
   }, []);
 
   const onPatternSelection = async (pattern: string) => {

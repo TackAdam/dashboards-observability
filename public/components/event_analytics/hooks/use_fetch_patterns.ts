@@ -76,6 +76,7 @@ export const useFetchPatterns = ({ pplService, requestParams }: IFetchPatternsPa
 
   const clearPatternCommands = (query: string) => query.replace(PATTERNS_REGEX, '');
 
+  // adam get patterns
   const getPatterns = (interval: string, errorHandler?: (error: any) => void, query?: string) => {
     const cur = queriesRef.current;
     const rawQuery = cur![requestParams.tabId][FINAL_QUERY];
@@ -97,7 +98,7 @@ export const useFetchPatterns = ({ pplService, requestParams }: IFetchPatternsPa
       fetchEvents({ query: anomaliesQuery }, 'jdbc', (res) => res),
     ])
       .then((res) => {
-        const [statsResp, anomaliesResp] = res as PromiseSettledResult<IPPLEventsDataSource>[];
+        const [statsResp, anomaliesResp] = res as Array<PromiseSettledResult<IPPLEventsDataSource>>;
         if (statsResp.status === 'rejected') {
           throw statsResp.reason;
         }
@@ -152,6 +153,8 @@ export const useFetchPatterns = ({ pplService, requestParams }: IFetchPatternsPa
             }
           });
           patternField = defaultPatternField;
+          console.log('the pattern field is ::', patternField);
+          console.log('the tab id is:', requestParams.tabId);
         },
         errorHandler
       );

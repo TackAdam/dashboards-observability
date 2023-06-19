@@ -162,6 +162,7 @@ export const Explorer = ({
     pplService,
     requestParams,
   });
+  // console.log("the tab id is from, explorer.tsx:", requestParams.tabId);
   const appLogEvents = tabId.startsWith('application-analytics-tab');
   const query = useSelector(selectQueries)[tabId];
   const explorerData = useSelector(selectQueryResult)[tabId];

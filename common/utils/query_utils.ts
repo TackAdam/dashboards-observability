@@ -97,10 +97,13 @@ export const buildPatternsQuery = (
   filteredPattern?: string
 ) => {
   let finalQuery = baseQuery;
+  console.log('First call', patternRegex, selectedPatternField);
   if (selectedPatternField) {
     finalQuery += ` | patterns `;
+    console.log('Second call', patternRegex);
     if (patternRegex && patternRegex !== PPL_DEFAULT_PATTERN_REGEX_FILETER) {
       finalQuery += `pattern='${escapeQuotes(patternRegex)}' `;
+      console.log('Third call', patternRegex);
     }
     finalQuery += `\`${selectedPatternField}\` `;
     if (filteredPattern) {

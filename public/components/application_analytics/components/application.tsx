@@ -240,6 +240,7 @@ export function Application(props: AppDetailProps) {
   useEffect(() => {
     if (selectedTabId !== TAB_LOG_ID) {
       switchToEditViz('');
+      console.log('IN APPLICATION USE EFFECT SWITCH EEE');
     }
   }, [selectedTabId]);
 
@@ -365,6 +366,7 @@ export function Application(props: AppDetailProps) {
   };
 
   const getLog = () => {
+    console.log('On Log tab Adam');
     return (
       <Explorer
         key={`explorer_application-analytics-tab`}
@@ -409,6 +411,7 @@ export function Application(props: AppDetailProps) {
   };
 
   const getPanel = () => {
+    console.log('IN APPLICATION USE EFFECT SWITCH EEE');
     return (
       <CustomPanelView
         panelId={application.panelId}
