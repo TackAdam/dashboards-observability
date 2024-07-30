@@ -1,0 +1,463 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Getting Started Collect Data Test Renders correctly 1`] = `
+<CollectAndShipData
+  isOpen={true}
+  onCardSelectionChange={[MockFunction]}
+  onMoveToQueryData={[MockFunction]}
+  onSelectSource={[MockFunction]}
+  onToggle={[MockFunction]}
+  selectedTechnology=""
+>
+  <EuiAccordion
+    arrowDisplay="left"
+    buttonContent="Collect and ship data"
+    forceState="open"
+    id="collect-and-ship-data"
+    initialIsOpen={false}
+    isLoading={false}
+    isLoadingMessage={false}
+    onToggle={[MockFunction]}
+    paddingSize="m"
+  >
+    <div
+      className="euiAccordion euiAccordion-isOpen"
+      onToggle={[MockFunction]}
+    >
+      <div
+        className="euiAccordion__triggerWrapper"
+      >
+        <button
+          aria-controls="collect-and-ship-data"
+          aria-expanded={true}
+          className="euiAccordion__button"
+          id="random_html_id"
+          onClick={[Function]}
+          type="button"
+        >
+          <span
+            className="euiAccordion__iconWrapper"
+          >
+            <EuiIcon
+              className="euiAccordion__icon euiAccordion__icon-isOpen"
+              size="m"
+              type="arrowRight"
+            >
+              <EuiIconBeaker
+                aria-hidden={true}
+                className="euiIcon euiIcon--medium euiIcon-isLoading euiAccordion__icon euiAccordion__icon-isOpen"
+                focusable="false"
+                role="img"
+                style={null}
+              >
+                <svg
+                  aria-hidden={true}
+                  className="euiIcon euiIcon--medium euiIcon-isLoading euiAccordion__icon euiAccordion__icon-isOpen"
+                  focusable="false"
+                  height={16}
+                  role="img"
+                  style={null}
+                  viewBox="0 0 16 16"
+                  width={16}
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M5.277 10.088c.02.014.04.03.057.047.582.55 1.134.812 1.666.812.586 0 1.84-.293 3.713-.88L9 6.212V2H7v4.212l-1.723 3.876Zm-.438.987L3.539 14h8.922l-1.32-2.969C9.096 11.677 7.733 12 7 12c-.74 0-1.463-.315-2.161-.925ZM6 2H5V1h6v1h-1v4l3.375 7.594A1 1 0 0 1 12.461 15H3.54a1 1 0 0 1-.914-1.406L6 6V2Z"
+                  />
+                </svg>
+              </EuiIconBeaker>
+            </EuiIcon>
+          </span>
+          <span
+            className="euiIEFlexWrapFix"
+          >
+            Collect and ship data
+          </span>
+        </button>
+      </div>
+      <div
+        aria-labelledby="random_html_id"
+        className="euiAccordion__childWrapper"
+        id="collect-and-ship-data"
+        role="region"
+        tabIndex={-1}
+      >
+        <EuiResizeObserver
+          onResize={[Function]}
+        >
+          <div>
+            <div
+              className="euiAccordion__padding--m"
+            >
+              <EuiPanel>
+                <div
+                  className="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusMedium euiPanel--plain euiPanel--hasShadow"
+                >
+                  <EuiText>
+                    <div
+                      className="euiText euiText--medium"
+                    >
+                      <h3>
+                        Collect your data
+                      </h3>
+                    </div>
+                  </EuiText>
+                  <EuiSpacer
+                    size="m"
+                  >
+                    <div
+                      className="euiSpacer euiSpacer--m"
+                    />
+                  </EuiSpacer>
+                  <EuiText>
+                    <div
+                      className="euiText euiText--medium"
+                    >
+                      <strong>
+                        Select a collection method
+                      </strong>
+                    </div>
+                  </EuiText>
+                  <EuiSpacer
+                    size="s"
+                  >
+                    <div
+                      className="euiSpacer euiSpacer--s"
+                    />
+                  </EuiSpacer>
+                  <EuiFlexGroup>
+                    <div
+                      className="euiFlexGroup euiFlexGroup--gutterLarge euiFlexGroup--directionRow euiFlexGroup--responsive"
+                    >
+                      <EuiFlexItem>
+                        <div
+                          className="euiFlexItem"
+                        >
+                          <EuiCheckableCard
+                            checkableType="radio"
+                            checked={false}
+                            id="configure_collectors"
+                            label="Configure collectors"
+                            onChange={[Function]}
+                          >
+                            <_EuiSplitPanelOuter
+                              className="euiCheckableCard"
+                              direction="row"
+                              hasBorder={true}
+                              responsive={false}
+                            >
+                              <EuiPanel
+                                className="euiSplitPanel euiSplitPanel--row euiCheckableCard"
+                                grow={false}
+                                hasBorder={true}
+                                paddingSize="none"
+                              >
+                                <div
+                                  className="euiPanel euiPanel--borderRadiusMedium euiPanel--plain euiPanel--hasShadow euiPanel--hasBorder euiPanel--flexGrowZero euiSplitPanel euiSplitPanel--row euiCheckableCard"
+                                >
+                                  <_EuiSplitPanelInner
+                                    color="subdued"
+                                    grow={false}
+                                    onClick={[Function]}
+                                  >
+                                    <EuiPanel
+                                      borderRadius="none"
+                                      className="euiSplitPanel__inner"
+                                      color="subdued"
+                                      element="div"
+                                      grow={false}
+                                      hasBorder={false}
+                                      hasShadow={false}
+                                      onClick={[Function]}
+                                    >
+                                      <div
+                                        className="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusNone euiPanel--subdued euiPanel--noShadow euiPanel--noBorder euiPanel--flexGrowZero euiPanel--isClickable euiSplitPanel__inner"
+                                        onClick={[Function]}
+                                      >
+                                        <EuiRadio
+                                          checked={false}
+                                          id="configure_collectors"
+                                          onChange={[Function]}
+                                        >
+                                          <div
+                                            className="euiRadio euiRadio--noLabel"
+                                          >
+                                            <input
+                                              checked={false}
+                                              className="euiRadio__input"
+                                              id="configure_collectors"
+                                              onChange={[Function]}
+                                              type="radio"
+                                            />
+                                            <div
+                                              className="euiRadio__circle"
+                                            />
+                                          </div>
+                                        </EuiRadio>
+                                      </div>
+                                    </EuiPanel>
+                                  </_EuiSplitPanelInner>
+                                  <_EuiSplitPanelInner>
+                                    <EuiPanel
+                                      borderRadius="none"
+                                      className="euiSplitPanel__inner"
+                                      color="transparent"
+                                      element="div"
+                                      hasBorder={false}
+                                      hasShadow={false}
+                                    >
+                                      <div
+                                        className="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusNone euiPanel--transparent euiPanel--noShadow euiPanel--noBorder euiSplitPanel__inner"
+                                      >
+                                        <label
+                                          aria-describedby="configure_collectors-details"
+                                          className="euiCheckableCard__label"
+                                          htmlFor="configure_collectors"
+                                        >
+                                          Configure collectors
+                                        </label>
+                                        <div
+                                          className="euiCheckableCard__children"
+                                          id="configure_collectors-details"
+                                        >
+                                          Configure agents and ingestion pipeline
+                                        </div>
+                                      </div>
+                                    </EuiPanel>
+                                  </_EuiSplitPanelInner>
+                                </div>
+                              </EuiPanel>
+                            </_EuiSplitPanelOuter>
+                          </EuiCheckableCard>
+                        </div>
+                      </EuiFlexItem>
+                      <EuiFlexItem>
+                        <div
+                          className="euiFlexItem"
+                        >
+                          <EuiCheckableCard
+                            checkableType="radio"
+                            checked={false}
+                            id="upload_file"
+                            label="Upload a file CSV"
+                            onChange={[Function]}
+                          >
+                            <_EuiSplitPanelOuter
+                              className="euiCheckableCard"
+                              direction="row"
+                              hasBorder={true}
+                              responsive={false}
+                            >
+                              <EuiPanel
+                                className="euiSplitPanel euiSplitPanel--row euiCheckableCard"
+                                grow={false}
+                                hasBorder={true}
+                                paddingSize="none"
+                              >
+                                <div
+                                  className="euiPanel euiPanel--borderRadiusMedium euiPanel--plain euiPanel--hasShadow euiPanel--hasBorder euiPanel--flexGrowZero euiSplitPanel euiSplitPanel--row euiCheckableCard"
+                                >
+                                  <_EuiSplitPanelInner
+                                    color="subdued"
+                                    grow={false}
+                                    onClick={[Function]}
+                                  >
+                                    <EuiPanel
+                                      borderRadius="none"
+                                      className="euiSplitPanel__inner"
+                                      color="subdued"
+                                      element="div"
+                                      grow={false}
+                                      hasBorder={false}
+                                      hasShadow={false}
+                                      onClick={[Function]}
+                                    >
+                                      <div
+                                        className="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusNone euiPanel--subdued euiPanel--noShadow euiPanel--noBorder euiPanel--flexGrowZero euiPanel--isClickable euiSplitPanel__inner"
+                                        onClick={[Function]}
+                                      >
+                                        <EuiRadio
+                                          checked={false}
+                                          id="upload_file"
+                                          onChange={[Function]}
+                                        >
+                                          <div
+                                            className="euiRadio euiRadio--noLabel"
+                                          >
+                                            <input
+                                              checked={false}
+                                              className="euiRadio__input"
+                                              id="upload_file"
+                                              onChange={[Function]}
+                                              type="radio"
+                                            />
+                                            <div
+                                              className="euiRadio__circle"
+                                            />
+                                          </div>
+                                        </EuiRadio>
+                                      </div>
+                                    </EuiPanel>
+                                  </_EuiSplitPanelInner>
+                                  <_EuiSplitPanelInner>
+                                    <EuiPanel
+                                      borderRadius="none"
+                                      className="euiSplitPanel__inner"
+                                      color="transparent"
+                                      element="div"
+                                      hasBorder={false}
+                                      hasShadow={false}
+                                    >
+                                      <div
+                                        className="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusNone euiPanel--transparent euiPanel--noShadow euiPanel--noBorder euiSplitPanel__inner"
+                                      >
+                                        <label
+                                          aria-describedby="upload_file-details"
+                                          className="euiCheckableCard__label"
+                                          htmlFor="upload_file"
+                                        >
+                                          Upload a file CSV
+                                        </label>
+                                        <div
+                                          className="euiCheckableCard__children"
+                                          id="upload_file-details"
+                                        >
+                                          Upload your data
+                                        </div>
+                                      </div>
+                                    </EuiPanel>
+                                  </_EuiSplitPanelInner>
+                                </div>
+                              </EuiPanel>
+                            </_EuiSplitPanelOuter>
+                          </EuiCheckableCard>
+                        </div>
+                      </EuiFlexItem>
+                      <EuiFlexItem>
+                        <div
+                          className="euiFlexItem"
+                        >
+                          <EuiCheckableCard
+                            checkableType="radio"
+                            checked={false}
+                            id="use_sample_dataset"
+                            label="Use a sample dataset"
+                            onChange={[Function]}
+                          >
+                            <_EuiSplitPanelOuter
+                              className="euiCheckableCard"
+                              direction="row"
+                              hasBorder={true}
+                              responsive={false}
+                            >
+                              <EuiPanel
+                                className="euiSplitPanel euiSplitPanel--row euiCheckableCard"
+                                grow={false}
+                                hasBorder={true}
+                                paddingSize="none"
+                              >
+                                <div
+                                  className="euiPanel euiPanel--borderRadiusMedium euiPanel--plain euiPanel--hasShadow euiPanel--hasBorder euiPanel--flexGrowZero euiSplitPanel euiSplitPanel--row euiCheckableCard"
+                                >
+                                  <_EuiSplitPanelInner
+                                    color="subdued"
+                                    grow={false}
+                                    onClick={[Function]}
+                                  >
+                                    <EuiPanel
+                                      borderRadius="none"
+                                      className="euiSplitPanel__inner"
+                                      color="subdued"
+                                      element="div"
+                                      grow={false}
+                                      hasBorder={false}
+                                      hasShadow={false}
+                                      onClick={[Function]}
+                                    >
+                                      <div
+                                        className="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusNone euiPanel--subdued euiPanel--noShadow euiPanel--noBorder euiPanel--flexGrowZero euiPanel--isClickable euiSplitPanel__inner"
+                                        onClick={[Function]}
+                                      >
+                                        <EuiRadio
+                                          checked={false}
+                                          id="use_sample_dataset"
+                                          onChange={[Function]}
+                                        >
+                                          <div
+                                            className="euiRadio euiRadio--noLabel"
+                                          >
+                                            <input
+                                              checked={false}
+                                              className="euiRadio__input"
+                                              id="use_sample_dataset"
+                                              onChange={[Function]}
+                                              type="radio"
+                                            />
+                                            <div
+                                              className="euiRadio__circle"
+                                            />
+                                          </div>
+                                        </EuiRadio>
+                                      </div>
+                                    </EuiPanel>
+                                  </_EuiSplitPanelInner>
+                                  <_EuiSplitPanelInner>
+                                    <EuiPanel
+                                      borderRadius="none"
+                                      className="euiSplitPanel__inner"
+                                      color="transparent"
+                                      element="div"
+                                      hasBorder={false}
+                                      hasShadow={false}
+                                    >
+                                      <div
+                                        className="euiPanel euiPanel--paddingMedium euiPanel--borderRadiusNone euiPanel--transparent euiPanel--noShadow euiPanel--noBorder euiSplitPanel__inner"
+                                      >
+                                        <label
+                                          aria-describedby="use_sample_dataset-details"
+                                          className="euiCheckableCard__label"
+                                          htmlFor="use_sample_dataset"
+                                        >
+                                          Use a sample dataset
+                                        </label>
+                                        <div
+                                          className="euiCheckableCard__children"
+                                          id="use_sample_dataset-details"
+                                        >
+                                          Explore with a log dataset
+                                        </div>
+                                      </div>
+                                    </EuiPanel>
+                                  </_EuiSplitPanelInner>
+                                </div>
+                              </EuiPanel>
+                            </_EuiSplitPanelOuter>
+                          </EuiCheckableCard>
+                        </div>
+                      </EuiFlexItem>
+                    </div>
+                  </EuiFlexGroup>
+                  <EuiSpacer
+                    size="m"
+                  >
+                    <div
+                      className="euiSpacer euiSpacer--m"
+                    />
+                  </EuiSpacer>
+                  <EuiSpacer
+                    size="s"
+                  >
+                    <div
+                      className="euiSpacer euiSpacer--s"
+                    />
+                  </EuiSpacer>
+                </div>
+              </EuiPanel>
+            </div>
+          </div>
+        </EuiResizeObserver>
+      </div>
+    </div>
+  </EuiAccordion>
+</CollectAndShipData>
+`;

@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Getting Started Header Test Renders getting started header as expected 1`] = `
+<GettingStartedConnectionsHeader>
+  <div>
+    <EuiPageHeader>
+      <header
+        className="euiPageHeader euiPageHeader--responsive euiPageHeader--center"
+      >
+        <EuiPageHeaderSection>
+          <div
+            className="euiPageHeaderSection"
+          >
+            <EuiTitle
+              data-test-subj="gettingstarted-header"
+              size="l"
+            >
+              <h1
+                className="euiTitle euiTitle--large"
+                data-test-subj="gettingstarted-header"
+              >
+                Getting Started
+              </h1>
+            </EuiTitle>
+          </div>
+        </EuiPageHeaderSection>
+      </header>
+    </EuiPageHeader>
+  </div>
+</GettingStartedConnectionsHeader>
+`;
