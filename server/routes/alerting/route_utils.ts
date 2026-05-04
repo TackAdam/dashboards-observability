@@ -13,14 +13,24 @@ export interface HandlerResult {
 
 /**
  * Convert any caught error into a framework-agnostic handler result.
- * Uses the typed error system (AlertManagerError) when available,
- * falls back to message-based classification for legacy errors.
+ *
+ * Only typed `AlertManagerError` messages are surfaced to clients — those are
+ * intentionally shaped for UI display (e.g. "Monitor not found"). Generic
+ * `Error.message` content is **never** reflected back, since upstream
+ * OpenSearch / Prometheus exceptions routinely include cluster URLs, index
+ * names, or stack fragments that leak internal topology. The full upstream
+ * message is always logged server-side when a `logger` is supplied.
  */
 export function toHandlerResult(e: unknown, logger?: Logger): HandlerResult {
   if (isAlertManagerError(e)) {
     if (logger) logger.error(e.message);
-    const body =
-      e.kind === 'internal' ? { error: 'An internal error occurred' } : { error: e.message };
+    if (e.kind === 'internal') {
+      return { status: 500, body: { error: 'An internal error occurred' } };
+    }
+    // Typed errors carry intentionally-UI-safe messages. Surface the optional
+    // `field` on validation errors so clients can do per-field highlights.
+    const body: Record<string, unknown> = { error: e.message };
+    if (e.kind === 'validation' && e.field) body.field = e.field;
     return { status: errorToStatus(e), body };
   }
   // Guard against null/undefined being thrown — String(null) → "null" is unhelpful
@@ -30,15 +40,16 @@ export function toHandlerResult(e: unknown, logger?: Logger): HandlerResult {
   }
   const msg = e instanceof Error ? e.message : String(e);
   if (logger) logger.error(msg);
-  if (msg.toLowerCase().includes('not found')) {
-    return { status: 404, body: { error: msg } };
+  const lowerMsg = msg.toLowerCase();
+  if (lowerMsg.includes('not found')) {
+    return { status: 404, body: { error: 'Resource not found' } };
   }
   if (
-    msg.toLowerCase().includes('validation') ||
-    msg.includes('required') ||
-    msg.includes('must be')
+    lowerMsg.includes('validation') ||
+    lowerMsg.includes('required') ||
+    lowerMsg.includes('must be')
   ) {
-    return { status: 400, body: { error: msg } };
+    return { status: 400, body: { error: 'Validation failed' } };
   }
   return { status: 500, body: { error: 'An internal error occurred' } };
 }
