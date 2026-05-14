@@ -37,7 +37,6 @@ const baseSummary = (): UnifiedRuleSummary => ({
 const fullRule = (): UnifiedRule => ({
   ...baseSummary(),
   description: 'Alerts when CPU usage exceeds 80%',
-  aiSummary: 'High CPU on production nodes',
   firingPeriod: '10m',
   alertHistory: [],
   conditionPreviewData: [],

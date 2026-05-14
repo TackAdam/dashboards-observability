@@ -14,18 +14,14 @@ import { useToast } from '../common/toast';
 import {
   Datasource,
   UnifiedAlertSummary,
-  UnifiedRule,
   UnifiedRuleSummary,
 } from '../../../common/types/alerting';
 import { MonitorsTable } from './monitors_table';
 import { CreateMonitor, MonitorFormState } from './create_monitor';
+import { EditMonitor } from './create_monitor/edit_monitor';
 import { AlertsDashboard } from './alerts_dashboard';
 import { AlertDetailFlyout } from './alert_detail_flyout';
 import { NotificationRoutingPanel } from './notification_routing_panel';
-// Phase 2: import { SuppressionRulesPanel } from './suppression_rules_panel';
-import { CreateLogsMonitor, LogsMonitorFormState } from './create_logs_monitor';
-import { CreateMetricsMonitor, MetricsMonitorFormState } from './create_metrics_monitor';
-// Phase 2: import SloListing from './slo_listing';
 import { AlertingOpenSearchService } from './query_services/alerting_opensearch_service';
 import { useMonitorMutations } from './hooks/use_monitor_mutations';
 import { coreRefs } from '../../framework/core_refs';
@@ -35,10 +31,8 @@ import {
   ALERT_MANAGER_MAX_DATASOURCES_SETTING,
   ALERT_MANAGER_SELECTED_DS_STORAGE_KEY,
 } from '../../../common/constants/alerting_settings';
-import {
-  transformLogsFormToPayload,
-  transformMetricsFormToPayload,
-} from '../../../common/services/alerting/form_transforms';
+import { transformPplFormToPayload } from '../../../common/services/alerting/form_transforms';
+import type { OpenSearchFormState } from './create_monitor/create_monitor_types';
 
 // ============================================================================
 // Main Page Component
@@ -156,9 +150,7 @@ export const AlarmsPage: React.FC<AlarmsPageProps> = ({
 
   const [deletedRuleIds, setDeletedRuleIds] = useState<Set<string>>(new Set());
   const [showCreateMonitor, setShowCreateMonitor] = useState(false);
-  const [createMonitorType, setCreateMonitorType] = useState<
-    'logs' | 'prometheus' | 'metrics' | null
-  >(null);
+  const [editTarget, setEditTarget] = useState<{ dsId: string; ruleId: string } | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<UnifiedAlertSummary | null>(null);
   const { setToast: addToast } = useToast();
 
@@ -450,128 +442,6 @@ export const AlarmsPage: React.FC<AlarmsPageProps> = ({
     }
   };
 
-  const formStateToRule = (formState: MonitorFormState, index = 0): UnifiedRule => {
-    const now = new Date().toISOString();
-
-    if (formState.datasourceType === 'prometheus') {
-      const labelsObj: Record<string, string> = {};
-      for (const l of formState.labels) {
-        if (l.key && l.value) labelsObj[l.key] = l.value;
-      }
-      const annotationsObj: Record<string, string> = {};
-      for (const a of formState.annotations) {
-        if (a.key && a.value) annotationsObj[a.key] = a.value;
-      }
-      return {
-        id: `new-${Date.now()}-${index}`,
-        datasourceId: formState.datasourceId || selectedDsIds[0],
-        datasourceType: 'prometheus',
-        name: formState.name,
-        enabled: formState.enabled,
-        severity: formState.severity,
-        query: formState.query,
-        condition: `${formState.threshold.operator} ${formState.threshold.value}${formState.threshold.unit}`,
-        labels: labelsObj,
-        annotations: annotationsObj,
-        monitorType: 'metric',
-        status: formState.enabled ? 'active' : 'disabled',
-        healthStatus: 'healthy',
-        createdBy: 'current-user',
-        createdAt: now,
-        lastModified: now,
-        notificationDestinations: [],
-        description: annotationsObj.description || '',
-        aiSummary: 'Newly created monitor. No historical data available yet.',
-        evaluationInterval: formState.evaluationInterval,
-        pendingPeriod: formState.pendingPeriod,
-        firingPeriod: formState.firingPeriod,
-        threshold: {
-          operator: formState.threshold.operator,
-          value: formState.threshold.value,
-          unit: formState.threshold.unit,
-        },
-        alertHistory: [],
-        conditionPreviewData: [],
-        notificationRouting: [],
-        suppressionRules: [],
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw field is empty for new monitors
-        raw: {} as any,
-      };
-    } else {
-      // OpenSearch monitor
-      const isPPL = formState.monitorType === 'ppl_monitor';
-      const indices = formState.indices
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const monitorType =
-        formState.monitorType === 'ppl_monitor'
-          ? ('metric' as const)
-          : formState.monitorType === 'bucket_level_monitor'
-          ? ('infrastructure' as const)
-          : formState.monitorType === 'doc_level_monitor'
-          ? ('log' as const)
-          : ('metric' as const);
-
-      // PPL monitors have Prometheus-like labels/annotations
-      const labelsObj: Record<string, string> = {};
-      const annotationsObj: Record<string, string> = {};
-      if (isPPL) {
-        for (const l of formState.labels) {
-          if (l.key && l.value) labelsObj[l.key] = l.value;
-        }
-        for (const a of formState.annotations) {
-          if (a.key && a.value) annotationsObj[a.key] = a.value;
-        }
-      }
-      if (indices.length > 0) labelsObj.indices = indices.join(', ');
-      labelsObj.monitorType = formState.monitorType;
-
-      return {
-        id: `new-${Date.now()}-${index}`,
-        datasourceId: formState.datasourceId || selectedDsIds[0],
-        datasourceType: 'opensearch',
-        name: formState.name,
-        enabled: formState.enabled,
-        severity: formState.severity,
-        query: formState.query,
-        condition: isPPL
-          ? `${formState.threshold.operator} ${formState.threshold.value}${formState.threshold.unit}`
-          : formState.triggerCondition,
-        labels: labelsObj,
-        annotations: annotationsObj,
-        monitorType,
-        status: formState.enabled ? 'active' : 'disabled',
-        healthStatus: 'healthy',
-        createdBy: 'current-user',
-        createdAt: now,
-        lastModified: now,
-        notificationDestinations: formState.actionName ? [formState.actionName] : [],
-        description: isPPL
-          ? `OpenSearch PPL monitor${indices.length > 0 ? ` on ${indices.join(', ')}` : ''}`
-          : `OpenSearch ${formState.monitorType} on ${indices.join(', ')}`,
-        aiSummary: 'Newly created OpenSearch monitor. No historical data available yet.',
-        evaluationInterval: isPPL
-          ? formState.evaluationInterval
-          : `${formState.schedule.interval} ${formState.schedule.unit.toLowerCase()}`,
-        pendingPeriod: isPPL ? formState.pendingPeriod : '5 minutes',
-        threshold: isPPL
-          ? {
-              operator: formState.threshold.operator,
-              value: formState.threshold.value,
-              unit: formState.threshold.unit,
-            }
-          : undefined,
-        alertHistory: [],
-        conditionPreviewData: [],
-        notificationRouting: [],
-        suppressionRules: [],
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw field is empty for new monitors
-        raw: {} as any,
-      };
-    }
-  };
-
   const resolveDatasourceId = (formState: MonitorFormState): string | null => {
     const dsId = formState.datasourceId || selectedDsIds[0];
     if (!dsId) {
@@ -581,172 +451,76 @@ export const AlarmsPage: React.FC<AlarmsPageProps> = ({
     return dsId;
   };
 
-  // TODO(alert-manager): this path posts the raw form state instead of an
-  // OS Monitor / Prometheus rule payload. The logs/metrics create flows
-  // already transform via transformLogsFormToPayload/transformMetricsFormToPayload;
-  // generic CreateMonitor should too. Casting here preserves current behavior.
+  const buildOsPayload = (form: OpenSearchFormState): Record<string, unknown> => {
+    if (form.monitorType === 'ppl_monitor') {
+      return transformPplFormToPayload({
+        name: form.name,
+        enabled: form.enabled,
+        query: form.query,
+        schedule: form.schedule,
+        pplTriggers: form.pplTriggers,
+      });
+    }
+    return (form as unknown) as Record<string, unknown>;
+  };
+
   const handleCreateMonitor = async (formState: MonitorFormState) => {
     const dsId = resolveDatasourceId(formState);
     if (!dsId) return;
-    const newRule = formStateToRule(formState);
     try {
-      await mutations.createMonitor((formState as unknown) as Record<string, unknown>, dsId);
+      const payload =
+        formState.datasourceType === 'opensearch'
+          ? buildOsPayload(formState)
+          : ((formState as unknown) as Record<string, unknown>);
+      await mutations.createMonitor(payload, dsId);
       addToast('Monitor created successfully');
-      setRules((prev) => [newRule, ...prev]);
-      setRulesTotal((prev) => prev + 1);
       setShowCreateMonitor(false);
+      // Refetch rules so the new monitor (with backend-assigned id /
+      // last_update_time) shows up in the list.
+      fetchRules(selectedDsIds, rulesPage, rulesPageSize);
     } catch (e: unknown) {
       addToast('Failed to create monitor', 'danger', e instanceof Error ? e.message : String(e));
     }
   };
 
+  const handleEditMonitor = async (form: MonitorFormState, ruleId: string) => {
+    const dsId = resolveDatasourceId(form);
+    if (!dsId) return;
+    try {
+      const payload =
+        form.datasourceType === 'opensearch'
+          ? buildOsPayload(form)
+          : ((form as unknown) as Record<string, unknown>);
+      await mutations.updateMonitor(ruleId, payload, dsId);
+      addToast('Monitor updated successfully');
+      setEditTarget(null);
+      fetchRules(selectedDsIds, rulesPage, rulesPageSize);
+    } catch (e: unknown) {
+      addToast('Failed to update monitor', 'danger', e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const handleBatchCreateMonitors = async (forms: MonitorFormState[]) => {
-    const succeededRules: UnifiedRule[] = [];
+    let succeeded = 0;
     for (let i = 0; i < forms.length; i++) {
       const dsId = resolveDatasourceId(forms[i]);
       if (!dsId) continue;
       try {
-        await mutations.createMonitor((forms[i] as unknown) as Record<string, unknown>, dsId);
-        succeededRules.push(formStateToRule(forms[i], i));
+        const payload =
+          forms[i].datasourceType === 'opensearch'
+            ? buildOsPayload(forms[i] as OpenSearchFormState)
+            : ((forms[i] as unknown) as Record<string, unknown>);
+        await mutations.createMonitor(payload, dsId);
+        succeeded += 1;
       } catch (e: unknown) {
         addToast('Failed to create monitor', 'danger', e instanceof Error ? e.message : String(e));
       }
     }
-    if (succeededRules.length > 0) {
-      addToast(succeededRules.length + ' monitor(s) created successfully');
-      setRules((prev) => [...succeededRules, ...prev]);
-      setRulesTotal((prev) => prev + succeededRules.length);
-    }
-    // Don't close flyout — AI wizard shows its own summary step and "Done" button
-  };
-
-  const handleCreateLogsMonitor = async (logsForm: LogsMonitorFormState) => {
-    const now = new Date().toISOString();
-    const allActions = logsForm.triggers.flatMap((t) => t.actions);
-    const rawSev = logsForm.triggers[0]?.severityLevel || 'medium';
-    const logsSeverity = (['critical', 'high', 'medium', 'low', 'info'].includes(rawSev)
-      ? rawSev
-      : 'medium') as 'critical' | 'high' | 'medium' | 'low' | 'info';
-    const newRule: UnifiedRule = {
-      id: `new-logs-${Date.now()}`,
-      datasourceId: selectedDsIds[0],
-      datasourceType: 'opensearch',
-      name: logsForm.monitorName,
-      enabled: true,
-      severity: logsSeverity,
-      query:
-        logsForm.monitorType === 'cluster_metrics' ? logsForm.clusterMetricsApi : logsForm.query,
-      condition: logsForm.triggers
-        .map((t) => `${t.conditionOperator} ${t.conditionValue}`)
-        .join(', '),
-      labels: { monitorType: logsForm.monitorType },
-      annotations: { description: logsForm.description },
-      monitorType: 'log',
-      status: 'active',
-      healthStatus: 'healthy',
-      createdBy: 'current-user',
-      createdAt: now,
-      lastModified: now,
-      notificationDestinations: allActions.map((a) => a.name),
-      description: logsForm.description,
-      aiSummary: 'Newly created logs monitor.',
-      evaluationInterval: `${logsForm.runEveryValue} ${logsForm.runEveryUnit}`,
-      pendingPeriod: '5 minutes',
-      threshold: logsForm.triggers[0]
-        ? {
-            operator: logsForm.triggers[0].conditionOperator,
-            value: logsForm.triggers[0].conditionValue,
-            unit: '',
-          }
-        : undefined,
-      alertHistory: [],
-      conditionPreviewData: [],
-      notificationRouting: [],
-      suppressionRules: [],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw field is empty for new monitors
-      raw: {} as any,
-    };
-    const dsId = selectedDsIds[0];
-    if (!dsId) {
-      addToast('Select a datasource before creating a monitor', 'warning');
-      return;
-    }
-    try {
-      await mutations.createMonitor(transformLogsFormToPayload(logsForm), dsId);
-      addToast('Logs monitor created successfully');
-      setRules((prev) => [newRule, ...prev]);
-      setRulesTotal((prev) => prev + 1);
-      setCreateMonitorType(null);
-    } catch (e: unknown) {
-      addToast(
-        'Failed to create logs monitor',
-        'danger',
-        e instanceof Error ? e.message : String(e)
-      );
-    }
-  };
-
-  const handleCreateMetricsMonitor = async (metricsForm: MetricsMonitorFormState) => {
-    const now = new Date().toISOString();
-    const severityLabel = metricsForm.labels.find((l) => l.key === 'severity');
-    const rawSeverity = severityLabel?.value || 'medium';
-    const condition = `${metricsForm.operator} ${metricsForm.thresholdValue}`;
-    const labelsObj: Record<string, string> = {};
-    for (const l of metricsForm.labels) {
-      if (l.key && l.value) labelsObj[l.key] = l.value;
-    }
-    const annotationsObj: Record<string, string> = {};
-    for (const a of metricsForm.annotations) {
-      if (a.key && a.value) annotationsObj[a.key] = a.value;
-    }
-    const newRule: UnifiedRule = {
-      id: `new-metrics-${Date.now()}`,
-      datasourceId: metricsForm.datasourceId || selectedDsIds[0],
-      datasourceType: 'prometheus',
-      name: metricsForm.monitorName,
-      enabled: true,
-      severity: (['critical', 'high', 'medium', 'low', 'info'].includes(rawSeverity)
-        ? rawSeverity
-        : 'medium') as 'critical' | 'high' | 'medium' | 'low' | 'info',
-      query: metricsForm.query,
-      condition,
-      labels: labelsObj,
-      annotations: annotationsObj,
-      monitorType: 'metric',
-      status: 'active',
-      healthStatus: 'healthy',
-      createdBy: 'current-user',
-      createdAt: now,
-      lastModified: now,
-      notificationDestinations: metricsForm.actions.map((a) => a.name),
-      description: metricsForm.description,
-      aiSummary: 'Newly created metrics monitor.',
-      evaluationInterval: metricsForm.evalInterval,
-      pendingPeriod: metricsForm.pendingPeriod,
-      firingPeriod: metricsForm.firingPeriod,
-      threshold: { operator: metricsForm.operator, value: metricsForm.thresholdValue, unit: '' },
-      alertHistory: [],
-      conditionPreviewData: [],
-      notificationRouting: [],
-      suppressionRules: [],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw field is empty for new monitors
-      raw: {} as any,
-    };
-    try {
-      await mutations.createMonitor(
-        transformMetricsFormToPayload(metricsForm),
-        metricsForm.datasourceId
-      );
-      addToast('Metrics monitor created successfully');
-      setRules((prev) => [newRule, ...prev]);
-      setRulesTotal((prev) => prev + 1);
-      setCreateMonitorType(null);
-    } catch (e: unknown) {
-      addToast(
-        'Failed to create metrics monitor',
-        'danger',
-        e instanceof Error ? e.message : String(e)
-      );
+    if (succeeded > 0) {
+      addToast(succeeded + ' monitor(s) created successfully');
+      // Refetch rather than synthesize. AI wizard keeps its own summary /
+      // "Done" UX so we don't close the flyout here.
+      fetchRules(selectedDsIds, rulesPage, rulesPageSize);
     }
   };
 
@@ -784,17 +558,18 @@ export const AlarmsPage: React.FC<AlarmsPageProps> = ({
           loading={dataLoading}
           onDelete={handleDeleteRules}
           onClone={handleCloneRule}
+          onEdit={(monitor) => setEditTarget({ dsId: monitor.datasourceId, ruleId: monitor.id })}
           onImport={handleImportMonitors}
-          // TODO(alert-manager): Restore Create Monitor button once creation flow is ready
-          /* onCreateMonitor={(type) => {
+          onCreateMonitor={(type) => {
             if (type === 'logs') {
-              setShowCreateMonitor(false);
-              setCreateMonitorType('logs');
+              setShowCreateMonitor(true);
             } else if (type === 'metrics') {
-              setShowCreateMonitor(false);
-              setCreateMonitorType('metrics');
+              addToast(
+                'Metrics monitor creation will be available in a follow-up release.',
+                'primary'
+              );
             }
-          }} */
+          }}
           selectedDsIds={selectedDsIds}
           onDatasourceChange={handleDatasourceChange}
           maxDatasources={maxDatasources}
@@ -870,16 +645,14 @@ export const AlarmsPage: React.FC<AlarmsPageProps> = ({
           selectedDsIds={selectedDsIds}
         />
       )}
-      {createMonitorType === 'logs' && (
-        <CreateLogsMonitor
-          onCancel={() => setCreateMonitorType(null)}
-          onSave={handleCreateLogsMonitor}
-        />
-      )}
-      {createMonitorType === 'metrics' && (
-        <CreateMetricsMonitor
-          onCancel={() => setCreateMonitorType(null)}
-          onSave={handleCreateMetricsMonitor}
+      {editTarget && (
+        <EditMonitor
+          dsId={editTarget.dsId}
+          ruleId={editTarget.ruleId}
+          onCancel={() => setEditTarget(null)}
+          onSave={handleEditMonitor}
+          datasources={datasources}
+          selectedDsIds={selectedDsIds}
         />
       )}
       {selectedAlert && (

@@ -16,7 +16,6 @@ import React from 'react';
 import {
   EuiAccordion,
   EuiBadge,
-  EuiCallOut,
   EuiFieldNumber,
   EuiFieldText,
   EuiFlexGroup,
@@ -29,17 +28,13 @@ import {
   EuiTextArea,
   EuiTitle,
 } from '@elastic/eui';
-import { AnnotationEditor, LabelEditor } from '../monitor_form_components';
 import {
   CLUSTER_METRICS_API_OPTIONS,
-  DURATION_OPTIONS,
-  INTERVAL_OPTIONS,
-  OPERATOR_OPTIONS,
   OpenSearchFormState,
   OS_MONITOR_TYPE_OPTIONS,
   OS_SCHEDULE_UNIT_OPTIONS,
-  ThresholdCondition,
 } from './create_monitor_types';
+import { PplTriggersSection } from './sections/ppl_triggers';
 
 // ============================================================================
 // OpenSearch Form Section
@@ -50,8 +45,7 @@ export const OpenSearchFormSection: React.FC<{
   onUpdate: <K extends keyof OpenSearchFormState>(key: K, value: OpenSearchFormState[K]) => void;
   validationErrors: Record<string, string>;
   hasSubmitted: boolean;
-  context?: { service?: string; team?: string };
-}> = ({ form, onUpdate, validationErrors, hasSubmitted, context }) => {
+}> = ({ form, onUpdate, validationErrors, hasSubmitted }) => {
   const isPPL = form.monitorType === 'ppl_monitor';
   const isClusterMetrics = form.monitorType === 'cluster_metrics_monitor';
 
@@ -73,13 +67,6 @@ export const OpenSearchFormSection: React.FC<{
         onUpdate('query', nowPPL ? defaultPPL : defaultDSL);
       }
     }
-  };
-
-  const updateThreshold = <K extends keyof ThresholdCondition>(
-    key: K,
-    value: ThresholdCondition[K]
-  ) => {
-    onUpdate('threshold', { ...form.threshold, [key]: value });
   };
 
   return (
@@ -249,163 +236,16 @@ export const OpenSearchFormSection: React.FC<{
 
       <EuiSpacer size="m" />
 
-      {/* Trigger — PPL uses Prometheus-like threshold + labels/annotations; DSL uses Painless */}
+      {/* Trigger — PPL renders a multi-trigger list; DSL falls back to Painless */}
       {isPPL ? (
-        <>
-          {/* Threshold Condition */}
-          <EuiPanel paddingSize="m" color="subdued">
-            <EuiTitle size="xs">
-              <h3>Alert Condition</h3>
-            </EuiTitle>
-            <EuiText size="xs" color="subdued">
-              Define when this monitor should fire an alert
-            </EuiText>
-            <EuiSpacer size="s" />
-            <EuiFlexGroup gutterSize="s" wrap>
-              <EuiFlexItem style={{ minWidth: 160 }}>
-                <EuiFormRow label="Operator" display="rowCompressed">
-                  <EuiSelect
-                    options={OPERATOR_OPTIONS}
-                    value={form.threshold.operator}
-                    onChange={(e) =>
-                      updateThreshold('operator', e.target.value as ThresholdCondition['operator'])
-                    }
-                    compressed
-                    aria-label="Threshold operator"
-                  />
-                </EuiFormRow>
-              </EuiFlexItem>
-              <EuiFlexItem style={{ minWidth: 100 }}>
-                <EuiFormRow label="Value" display="rowCompressed">
-                  <EuiFieldNumber
-                    value={form.threshold.value}
-                    onChange={(e) => updateThreshold('value', parseFloat(e.target.value) || 0)}
-                    compressed
-                    aria-label="Threshold value"
-                  />
-                </EuiFormRow>
-              </EuiFlexItem>
-              <EuiFlexItem style={{ minWidth: 60 }}>
-                <EuiFormRow label="Unit" display="rowCompressed">
-                  <EuiFieldText
-                    value={form.threshold.unit}
-                    onChange={(e) => updateThreshold('unit', e.target.value)}
-                    placeholder=""
-                    compressed
-                    aria-label="Threshold unit"
-                  />
-                </EuiFormRow>
-              </EuiFlexItem>
-              <EuiFlexItem style={{ minWidth: 160 }}>
-                <EuiFormRow label="For Duration" display="rowCompressed">
-                  <EuiSelect
-                    options={DURATION_OPTIONS}
-                    value={form.threshold.forDuration}
-                    onChange={(e) => updateThreshold('forDuration', e.target.value)}
-                    compressed
-                    aria-label="For duration"
-                  />
-                </EuiFormRow>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-            <EuiSpacer size="s" />
-            <EuiCallOut size="s" color="primary" iconType="iInCircle">
-              <EuiText size="xs">
-                Alert fires when query result {form.threshold.operator} {form.threshold.value}
-                {form.threshold.unit} for {form.threshold.forDuration}
-              </EuiText>
-            </EuiCallOut>
-          </EuiPanel>
-
-          <EuiSpacer size="m" />
-
-          {/* Evaluation Settings */}
-          <EuiPanel paddingSize="m" color="subdued">
-            <EuiTitle size="xs">
-              <h3>Evaluation Settings</h3>
-            </EuiTitle>
-            <EuiSpacer size="s" />
-            <EuiFlexGroup gutterSize="s" wrap>
-              <EuiFlexItem style={{ minWidth: 160 }}>
-                <EuiFormRow
-                  label="Eval Interval"
-                  helpText="How often evaluated"
-                  display="rowCompressed"
-                >
-                  <EuiSelect
-                    options={INTERVAL_OPTIONS}
-                    value={form.evaluationInterval}
-                    onChange={(e) => onUpdate('evaluationInterval', e.target.value)}
-                    compressed
-                    aria-label="Evaluation interval"
-                  />
-                </EuiFormRow>
-              </EuiFlexItem>
-              <EuiFlexItem style={{ minWidth: 160 }}>
-                <EuiFormRow label="Pending Period" helpText="Before firing" display="rowCompressed">
-                  <EuiSelect
-                    options={DURATION_OPTIONS}
-                    value={form.pendingPeriod}
-                    onChange={(e) => onUpdate('pendingPeriod', e.target.value)}
-                    compressed
-                    aria-label="Pending period"
-                  />
-                </EuiFormRow>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiPanel>
-
-          <EuiSpacer size="m" />
-
-          {/* Labels */}
-          <EuiPanel paddingSize="m" color="subdued">
-            <EuiFlexGroup alignItems="center" responsive={false} gutterSize="s">
-              <EuiFlexItem>
-                <EuiTitle size="xs">
-                  <h3>Labels</h3>
-                </EuiTitle>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiText size="xs" color="subdued">
-                  Categorize and route alerts
-                </EuiText>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-            <EuiSpacer size="s" />
-            <LabelEditor
-              labels={form.labels}
-              onChange={(l) => onUpdate('labels', l)}
-              context={context}
-            />
-          </EuiPanel>
-
-          <EuiSpacer size="m" />
-
-          {/* Annotations */}
-          <EuiPanel paddingSize="m" color="subdued">
-            <EuiAccordion
-              id="os-ppl-annotations"
-              buttonContent={
-                <EuiFlexGroup alignItems="center" responsive={false} gutterSize="s">
-                  <EuiFlexItem grow={false}>
-                    <strong>Annotations</strong>
-                  </EuiFlexItem>
-                  <EuiFlexItem grow={false}>
-                    <EuiBadge color="hollow">Optional</EuiBadge>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-              }
-              initialIsOpen={true}
-              paddingSize="none"
-            >
-              <EuiSpacer size="s" />
-              <AnnotationEditor
-                annotations={form.annotations}
-                onChange={(a) => onUpdate('annotations', a)}
-              />
-            </EuiAccordion>
-          </EuiPanel>
-        </>
+        <EuiPanel paddingSize="m" color="subdued">
+          <PplTriggersSection
+            dsId={form.datasourceId}
+            triggers={form.pplTriggers}
+            onChange={(next) => onUpdate('pplTriggers', next)}
+            hasSubmitted={hasSubmitted}
+          />
+        </EuiPanel>
       ) : (
         <>
           {/* DSL Trigger */}
@@ -439,58 +279,58 @@ export const OpenSearchFormSection: React.FC<{
               />
             </EuiFormRow>
           </EuiPanel>
+
+          <EuiSpacer size="m" />
+
+          {/* DSL Action (optional) */}
+          <EuiPanel paddingSize="m" color="subdued">
+            <EuiAccordion
+              id="os-action"
+              buttonContent={
+                <EuiFlexGroup alignItems="center" responsive={false} gutterSize="s">
+                  <EuiFlexItem grow={false}>
+                    <strong>Action</strong>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiBadge color="hollow">Optional</EuiBadge>
+                  </EuiFlexItem>
+                </EuiFlexGroup>
+              }
+              initialIsOpen={false}
+              paddingSize="none"
+            >
+              <EuiSpacer size="s" />
+              <EuiFormRow label="Action Name">
+                <EuiFieldText
+                  placeholder="Notify Slack"
+                  value={form.actionName}
+                  onChange={(e) => onUpdate('actionName', e.target.value)}
+                  aria-label="Action name"
+                />
+              </EuiFormRow>
+              <EuiSpacer size="s" />
+              <EuiFormRow label="Destination ID">
+                <EuiFieldText
+                  placeholder="Destination ID"
+                  value={form.actionDestination}
+                  onChange={(e) => onUpdate('actionDestination', e.target.value)}
+                  aria-label="Destination ID"
+                />
+              </EuiFormRow>
+              <EuiSpacer size="s" />
+              <EuiFormRow label="Message Template">
+                <EuiTextArea
+                  placeholder="Alert: {{ctx.monitor.name}} triggered"
+                  value={form.actionMessage}
+                  onChange={(e) => onUpdate('actionMessage', e.target.value)}
+                  rows={3}
+                  aria-label="Message template"
+                />
+              </EuiFormRow>
+            </EuiAccordion>
+          </EuiPanel>
         </>
       )}
-
-      <EuiSpacer size="m" />
-
-      {/* Action (optional) */}
-      <EuiPanel paddingSize="m" color="subdued">
-        <EuiAccordion
-          id="os-action"
-          buttonContent={
-            <EuiFlexGroup alignItems="center" responsive={false} gutterSize="s">
-              <EuiFlexItem grow={false}>
-                <strong>Action</strong>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiBadge color="hollow">Optional</EuiBadge>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          }
-          initialIsOpen={false}
-          paddingSize="none"
-        >
-          <EuiSpacer size="s" />
-          <EuiFormRow label="Action Name">
-            <EuiFieldText
-              placeholder="Notify Slack"
-              value={form.actionName}
-              onChange={(e) => onUpdate('actionName', e.target.value)}
-              aria-label="Action name"
-            />
-          </EuiFormRow>
-          <EuiSpacer size="s" />
-          <EuiFormRow label="Destination ID">
-            <EuiFieldText
-              placeholder="Destination ID"
-              value={form.actionDestination}
-              onChange={(e) => onUpdate('actionDestination', e.target.value)}
-              aria-label="Destination ID"
-            />
-          </EuiFormRow>
-          <EuiSpacer size="s" />
-          <EuiFormRow label="Message Template">
-            <EuiTextArea
-              placeholder="Alert: {{ctx.monitor.name}} triggered"
-              value={form.actionMessage}
-              onChange={(e) => onUpdate('actionMessage', e.target.value)}
-              rows={3}
-              aria-label="Message template"
-            />
-          </EuiFormRow>
-        </EuiAccordion>
-      </EuiPanel>
     </>
   );
 };

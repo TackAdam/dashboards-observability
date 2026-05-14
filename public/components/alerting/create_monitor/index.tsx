@@ -41,6 +41,7 @@ import { Datasource, UnifiedAlertSeverity } from '../../../../common/types/alert
 import {
   MonitorFormState as ValidatorFormState,
   validateMonitorForm,
+  validatePplForm,
 } from '../../../../common/services/alerting/validators';
 import { validatePromQL } from '../promql_editor';
 import { MonitorTemplateWizard, AlertTemplate } from '../monitor_template_wizard';
@@ -74,6 +75,18 @@ export interface CreateMonitorProps {
   /** Pre-selected datasource IDs from the parent page */
   selectedDsIds?: string[];
   context?: { service?: string; team?: string };
+  /**
+   * `'create'` (default) opens an empty form; `'edit'` pre-populates the
+   * form from `initialForm`. The "AI / from-template" mode is hidden in
+   * edit mode — Prometheus rule-group templates only make sense at create
+   * time.
+   */
+  mode?: 'create' | 'edit';
+  /**
+   * Pre-populated form state for edit mode. Producer is `EditMonitor`,
+   * which converts a `UnifiedRule` via `unifiedRuleToOsForm`.
+   */
+  initialForm?: MonitorFormState;
 }
 
 type CreationMode = 'manual' | 'ai';
@@ -85,7 +98,11 @@ export const CreateMonitor: React.FC<CreateMonitorProps> = ({
   datasources,
   selectedDsIds,
   context,
+  mode = 'create',
+  initialForm,
 }) => {
+  const isEdit = mode === 'edit';
+
   // Determine initial datasource from parent selection
   const initialDs = useMemo(() => {
     if (selectedDsIds && selectedDsIds.length > 0) {
@@ -95,19 +112,34 @@ export const CreateMonitor: React.FC<CreateMonitorProps> = ({
     return null;
   }, [datasources, selectedDsIds]);
 
-  const initialType: MonitorBackendType =
-    initialDs?.type === 'opensearch' ? 'opensearch' : 'prometheus';
+  // In edit mode the backend type is pinned by the existing monitor; in
+  // create mode it follows the parent-page datasource selection.
+  const initialType: MonitorBackendType = initialForm
+    ? initialForm.datasourceType === 'prometheus'
+      ? 'prometheus'
+      : 'opensearch'
+    : initialDs?.type === 'opensearch'
+    ? 'opensearch'
+    : 'prometheus';
 
   const [creationMode, setCreationMode] = useState<CreationMode>('manual');
   const [backendType, setBackendType] = useState<MonitorBackendType>(initialType);
-  const [promForm, setPromForm] = useState<PrometheusFormState>({
-    ...DEFAULT_PROM_FORM,
-    datasourceId: initialType === 'prometheus' && initialDs ? initialDs.id : '',
-  });
-  const [osForm, setOsForm] = useState<OpenSearchFormState>({
-    ...DEFAULT_OS_FORM,
-    datasourceId: initialType === 'opensearch' && initialDs ? initialDs.id : '',
-  });
+  const [promForm, setPromForm] = useState<PrometheusFormState>(
+    initialForm && initialForm.datasourceType === 'prometheus'
+      ? initialForm
+      : {
+          ...DEFAULT_PROM_FORM,
+          datasourceId: initialType === 'prometheus' && initialDs ? initialDs.id : '',
+        }
+  );
+  const [osForm, setOsForm] = useState<OpenSearchFormState>(
+    initialForm && initialForm.datasourceType === 'opensearch'
+      ? initialForm
+      : {
+          ...DEFAULT_OS_FORM,
+          datasourceId: initialType === 'opensearch' && initialDs ? initialDs.id : '',
+        }
+  );
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
@@ -174,9 +206,14 @@ export const CreateMonitor: React.FC<CreateMonitorProps> = ({
       setValidationErrors({});
       onSave(promForm);
     } else {
-      const errors: Record<string, string> = {};
+      let errors: Record<string, string> = {};
       if (osForm.monitorType === 'ppl_monitor') {
-        if (!osForm.query.trim()) errors.query = 'PPL query is required';
+        const result = validatePplForm({
+          name: osForm.name,
+          query: osForm.query,
+          pplTriggers: osForm.pplTriggers,
+        });
+        errors = result.errors;
       } else if (osForm.monitorType === 'cluster_metrics_monitor') {
         if (!osForm.clusterMetricsApiType.trim())
           errors.clusterMetricsApiType = 'API type is required';
@@ -231,7 +268,7 @@ export const CreateMonitor: React.FC<CreateMonitorProps> = ({
       <EuiFlyoutHeader hasBorder>
         <EuiTitle size="m">
           <h2 id="createMonitorFlyoutTitle">
-            Create {backendType === 'prometheus' ? 'Metrics' : 'Logs'} Monitor
+            {isEdit ? 'Edit' : 'Create'} {backendType === 'prometheus' ? 'Metrics' : 'Logs'} Monitor
           </h2>
         </EuiTitle>
         <EuiSpacer size="s" />
@@ -243,17 +280,18 @@ export const CreateMonitor: React.FC<CreateMonitorProps> = ({
       </EuiFlyoutHeader>
 
       <EuiFlyoutBody>
-        {/* Target Datasource */}
+        {/* Target Datasource — locked in edit mode (the existing monitor
+            already binds a datasource; changing it would require re-creating). */}
         <DatasourceTargetSelector
           datasources={datasources}
           selectedId={activeForm.datasourceId}
-          onChange={handleDatasourceChange}
+          onChange={isEdit ? () => undefined : handleDatasourceChange}
         />
 
         <EuiSpacer size="m" />
 
-        {/* Creation Mode Toggle — AI only available for Prometheus */}
-        {backendType === 'prometheus' && (
+        {/* Creation Mode Toggle — AI only available for Prometheus, hidden in edit mode */}
+        {!isEdit && backendType === 'prometheus' && (
           <>
             <EuiPanel paddingSize="s" hasBorder>
               <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false}>
@@ -359,7 +397,6 @@ export const CreateMonitor: React.FC<CreateMonitorProps> = ({
             onUpdate={updateOs}
             validationErrors={validationErrors}
             hasSubmitted={hasSubmitted}
-            context={context}
           />
         )}
       </EuiFlyoutBody>
@@ -373,12 +410,12 @@ export const CreateMonitor: React.FC<CreateMonitorProps> = ({
             <EuiFlexGroup gutterSize="s" responsive={false}>
               <EuiFlexItem grow={false}>
                 <EuiButton onClick={handleSave} isDisabled={!isValid}>
-                  Save Monitor
+                  {isEdit ? 'Save Changes' : 'Save Monitor'}
                 </EuiButton>
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
                 <EuiButton fill onClick={handleSave} isDisabled={!isValid}>
-                  Save &amp; Enable
+                  {isEdit ? 'Save & Enable' : 'Save & Enable'}
                 </EuiButton>
               </EuiFlexItem>
             </EuiFlexGroup>
