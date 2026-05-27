@@ -10,6 +10,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   EuiBasicTableColumn,
+  EuiButton,
   EuiFlexGroup,
   EuiFlexItem,
   EuiPanel,
@@ -85,9 +86,9 @@ function formatDuration(startTime: string | number): string {
 }
 
 // Cap on label-key facets rendered before the user expands the section.
-// Mirrors Grafana's label browser pattern: show a truncated list, with a
-// `Show all (N)` toggle to reveal the rest. 10 fits the common case
-// (severity / instance / job / namespace / etc.) on screen at once.
+// Show a truncated list with a `Show all (N)` toggle to reveal the rest.
+// 10 fits the common case (severity / instance / job / namespace / etc.)
+// on screen at once.
 const LABEL_KEY_INITIAL_VISIBLE = 10;
 
 const SEVERITY_SORT_ORDER: Record<string, number> = {
@@ -261,8 +262,8 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
   );
 
   // Per-name icon map so the datasource facet renders a leading
-  // OpenSearch / Prometheus glyph next to each option (Grafana-style).
-  // Keyed by name because that's the option key passed to FacetFilterGroup.
+  // OpenSearch / Prometheus glyph next to each option. Keyed by name
+  // because that's the option key passed to FacetFilterGroup.
   const datasourceIconMap = useMemo(() => {
     const map: Record<string, string> = {};
     for (const ds of datasources) {
@@ -552,6 +553,7 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
             minSize="10%"
             mode={['custom', { position: 'top' }]}
             paddingSize="none"
+            scrollable={false}
             className="altFiltersPanel"
           >
             <EuiPanel className="altFiltersInner">
@@ -748,6 +750,7 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
             initialSize={85}
             minSize="400px"
             paddingSize="none"
+            scrollable={false}
             className="altContentPanel"
           >
             {
@@ -774,7 +777,7 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
                       color="warning"
                       iconType="alert"
                       size="s"
-                      data-test-subj="alerts-truncated-callout"
+                      data-test-subj="alertsTruncatedCallout"
                     >
                       <p>
                         <FormattedMessage
@@ -798,7 +801,7 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
                       color="warning"
                       iconType="alert"
                       size="s"
-                      data-test-subj="alerts-fallback-callout"
+                      data-test-subj="alertsFallbackCallout"
                     >
                       {fallbackHints.map((h, i) => (
                         <p key={i}>
@@ -841,14 +844,18 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
                           </EuiTitle>
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
-                          <EuiSuperDatePicker
-                            compressed
-                            start={pickerStart}
-                            end={pickerEnd}
-                            onTimeChange={onTimeChange}
-                            onRefresh={onRefresh}
-                            data-test-subj="alertManager-datePicker"
-                          />
+                          {/* `EuiSuperDatePicker` doesn't forward `data-test-subj`
+                              to its rendered control, so anchor it on a wrapper
+                              div for stable Cypress / functional selectors. */}
+                          <div data-test-subj="alertManagerDatePicker">
+                            <EuiSuperDatePicker
+                              compressed
+                              start={pickerStart}
+                              end={pickerEnd}
+                              onTimeChange={onTimeChange}
+                              onRefresh={onRefresh}
+                            />
+                          </div>
                         </EuiFlexItem>
                       </EuiFlexGroup>
                       <EuiSpacer size="s" />
@@ -906,8 +913,9 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
                             </p>
                           }
                           actions={
-                            <EuiButtonEmpty
+                            <EuiButton
                               size="s"
+                              fill
                               onClick={onGoToRules}
                               data-test-subj="alertsEmptyGoToRules"
                             >
@@ -915,7 +923,7 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
                                 id="observability.alerting.alertsDashboard.goToRules"
                                 defaultMessage="Go to Rules"
                               />
-                            </EuiButtonEmpty>
+                            </EuiButton>
                           }
                         />
                       ) : emptyMode === 'no-alerts' ? (
@@ -949,7 +957,7 @@ export const AlertsDashboard: React.FC<AlertsDashboardProps> = ({
                 <EuiSpacer size="s" />
 
                 {/* ---- Search + Table ---- */}
-                <EuiPanel paddingSize="m" hasBorder>
+                <EuiPanel paddingSize="m" hasBorder className="altTablePanel">
                   <EuiTitle size="xs">
                     <h2>
                       <FormattedMessage
