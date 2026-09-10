@@ -1067,7 +1067,7 @@ export const ServicesHome: React.FC<ServicesHomeProps> = ({
             </EuiFlexItem>
           </EuiFlexGroup>
         ),
-        width: '19%',
+        width: '23%',
         align: 'center',
         sortable: (item: ServiceTableItem) => {
           if (!item?.serviceName) return 0;
@@ -1119,7 +1119,7 @@ export const ServicesHome: React.FC<ServicesHomeProps> = ({
             </EuiFlexItem>
           </EuiFlexGroup>
         ),
-        width: '19%',
+        width: '23%',
         align: 'center',
         sortable: (item: ServiceTableItem) => {
           if (!item?.serviceName) return 0;
