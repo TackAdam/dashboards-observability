@@ -27,6 +27,7 @@ import { PromQLLineChart } from '../promql_line_chart';
 import { SelectedNodeState, ServiceMapNodeMetrics } from '../../../common/types/service_map_types';
 import {
   getPlatformDisplayName,
+  getNodeSubtitle,
   APPLICATION_MAP_CONSTANTS,
   APM_CONSTANTS,
 } from '../../../common/constants';
@@ -39,6 +40,10 @@ import {
   getQueryApplicationFaults,
   getQueryApplicationErrors,
   getQueryApplicationLatency,
+  getQueryDependencyRequests,
+  getQueryDependencyFaults,
+  getQueryDependencyErrors,
+  getQueryDependencyLatency,
 } from '../../../query_services/query_requests/promql_queries';
 import { formatCount, formatLatency } from '../../../common/format_utils';
 import { useChartStepWindow } from '../../hooks/use_chart_step_window';
@@ -85,12 +90,19 @@ export const ServiceDetailsPanel: React.FC<ServiceDetailsPanelProps> = ({
 
   // Detect if this is a group node (from Group By feature)
   const isGroupNode = node.nodeId.startsWith('group-') || node.platformType === 'Group';
+
+  // Dependency nodes (database / messaging / external) have no SERVER-span metrics;
+  // their charts are sourced from the callers' CLIENT-span series (remoteService=name).
+  const isDependencyNode =
+    node.nodeType === 'database' || node.nodeType === 'messaging' || node.nodeType === 'external';
   const groupByAttribute = isGroupNode ? Object.keys(node.groupByAttributes || {})[0] : null;
   const groupByValue = isGroupNode ? node.serviceName : null; // serviceName holds the group value
 
   const platformDisplay = isApplicationNode
     ? 'Application'
-    : getPlatformDisplayName(node.platformType);
+    : isDependencyNode
+      ? getNodeSubtitle(node.nodeType, node.environment)
+      : getPlatformDisplayName(node.platformType);
   const language = node.groupByAttributes?.['telemetry.sdk.language'];
 
   // For group nodes, build queries that filter by the group attribute
@@ -107,17 +119,23 @@ export const ServiceDetailsPanel: React.FC<ServiceDetailsPanelProps> = ({
     ? `sum(request{${groupLabelFilter}})`
     : isApplicationNode
       ? getQueryApplicationRequests()
-      : getQueryServiceRequests(node.environment, node.serviceName, chartStepWindow);
+      : isDependencyNode
+        ? getQueryDependencyRequests(node.environment, node.serviceName, chartStepWindow)
+        : getQueryServiceRequests(node.environment, node.serviceName, chartStepWindow);
   const faultsQuery = isGroupNode
     ? `sum(fault{${groupLabelFilter}})`
     : isApplicationNode
       ? getQueryApplicationFaults()
-      : getQueryServiceFaults(node.environment, node.serviceName, chartStepWindow);
+      : isDependencyNode
+        ? getQueryDependencyFaults(node.environment, node.serviceName, chartStepWindow)
+        : getQueryServiceFaults(node.environment, node.serviceName, chartStepWindow);
   const errorsQuery = isGroupNode
     ? `sum(error{${groupLabelFilter}})`
     : isApplicationNode
       ? getQueryApplicationErrors()
-      : getQueryServiceErrors(node.environment, node.serviceName, chartStepWindow);
+      : isDependencyNode
+        ? getQueryDependencyErrors(node.environment, node.serviceName, chartStepWindow)
+        : getQueryServiceErrors(node.environment, node.serviceName, chartStepWindow);
 
   // Latency query (P99, P90, P50 combined) - use application-level, group-level, or service-level
   const latencyQuery = isGroupNode
@@ -151,7 +169,9 @@ label_replace(
 `
     : isApplicationNode
       ? getQueryApplicationLatency()
-      : `
+      : isDependencyNode
+        ? getQueryDependencyLatency(node.environment, node.serviceName)
+        : `
 label_replace(
   histogram_quantile(0.99,
     sum by (le) (
@@ -214,7 +234,9 @@ label_replace(
           {!isApplicationNode && !isGroupNode && (
             <EuiFlexItem grow={false}>
               <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                {onShowSpans && (
+                {/* Spans/logs are keyed by serviceName; inferred dependencies emit no
+                    spans under their own name, so these are hidden for dependency nodes. */}
+                {onShowSpans && !isDependencyNode && (
                   <EuiFlexItem grow={false}>
                     <EuiToolTip content={i18nTexts.actions.viewSpans}>
                       <EuiButtonIcon
@@ -225,7 +247,7 @@ label_replace(
                     </EuiToolTip>
                   </EuiFlexItem>
                 )}
-                {onShowLogs && (
+                {onShowLogs && !isDependencyNode && (
                   <EuiFlexItem grow={false}>
                     <EuiToolTip content={i18nTexts.actions.viewLogs}>
                       <EuiButtonIcon
