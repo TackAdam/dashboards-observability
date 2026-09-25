@@ -437,6 +437,27 @@ describe('PromQLLineChart', () => {
         new Date(1704067320000).toISOString()
       );
     });
+
+    it('sorts a right-to-left brush so from <= to', () => {
+      const onTimeRangeChange = jest.fn();
+      mockUsePromQLChartData.mockReturnValue({
+        series: mockSeriesData,
+        isLoading: false,
+        error: null,
+      });
+
+      render(<PromQLLineChart {...defaultProps} onTimeRangeChange={onTimeRangeChange} />);
+
+      const brushEndCalls = mockOn.mock.calls.filter((c) => c[0] === 'brushEnd');
+      const handler = brushEndCalls[brushEndCalls.length - 1][1];
+      // Endpoints reported in reverse (right-to-left drag).
+      handler({ areas: [{ coordRange: [1704067320000, 1704067200000] }] });
+
+      expect(onTimeRangeChange).toHaveBeenCalledWith(
+        new Date(1704067200000).toISOString(),
+        new Date(1704067320000).toISOString()
+      );
+    });
   });
 
   describe('legend isolate (#7)', () => {
@@ -512,6 +533,36 @@ describe('PromQLLineChart', () => {
       const { container } = render(
         <PromQLLineChart {...defaultProps} title="Request Rate" showOpenInMetrics={false} />
       );
+
+      expect(
+        container.querySelector('[data-test-subj="openInMetrics-request-rate"]')
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not render the deep-link button while an error is showing', () => {
+      mockUsePromQLChartData.mockReturnValue({
+        series: [],
+        isLoading: false,
+        error: new Error('boom'),
+      });
+
+      const { container } = render(<PromQLLineChart {...defaultProps} title="Request Rate" />);
+
+      // The button is absolutely positioned; gating it on the loaded-with-data
+      // state keeps it from overlaying / intercepting clicks on the error state.
+      expect(
+        container.querySelector('[data-test-subj="openInMetrics-request-rate"]')
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not render the deep-link button on the empty state', () => {
+      mockUsePromQLChartData.mockReturnValue({
+        series: [],
+        isLoading: false,
+        error: null,
+      });
+
+      const { container } = render(<PromQLLineChart {...defaultProps} title="Request Rate" />);
 
       expect(
         container.querySelector('[data-test-subj="openInMetrics-request-rate"]')

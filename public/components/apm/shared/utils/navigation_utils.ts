@@ -41,8 +41,18 @@ function encodeTimeRangeValueForG(value: string): string {
       }
     }
   }
-  const risonValue = bare ? value : `'${value.replace(/!/g, '!!').replace(/'/g, "!'")}'`;
+  const risonValue = bare ? value : `'${escapeRisonString(value)}'`;
   return encodeURIComponent(risonValue);
+}
+
+/**
+ * Escape a value for embedding inside a rison single-quoted string. Rison treats
+ * `!` as its escape char and `'` as the string terminator, so both must be
+ * escaped (`!`→`!!` FIRST, then `'`→`!'`) or the surrounding rison is corrupted
+ * and the OSD read path silently drops the enclosing object.
+ */
+function escapeRisonString(value: string): string {
+  return value.replace(/!/g, '!!').replace(/'/g, "!'");
 }
 
 /**
@@ -79,17 +89,17 @@ export function navigateToExploreMetrics(
   const g = `_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:${encodeTimeRangeValueForG(
     timeRange.from
   )},to:${encodeTimeRangeValueForG(timeRange.to)}))`;
-  const dataset = `dataset:(id:'${connectionId}',title:'${connectionId}',type:PROMETHEUS,language:PROMQL,timeFieldName:Time,signalType:metrics,dataSource:(meta:()))`;
+  // connectionId lands inside rison single-quoted strings; a connection whose id
+  // contains `'`/`!` would corrupt the rison and Explore would drop the dataset,
+  // opening with no data source — so rison-escape it exactly like the query.
+  const safeConnectionId = escapeRisonString(connectionId);
+  const dataset = `dataset:(id:'${safeConnectionId}',title:'${safeConnectionId}',type:PROMETHEUS,language:PROMQL,timeFieldName:Time,signalType:metrics,dataSource:(meta:()))`;
   // The query lives inside a rison single-quoted string. Rison treats `!` and `'`
   // as special (escape + string terminator), and encodeURIComponent leaves both
   // raw — so a PromQL matcher like `remoteService!=""` would corrupt the rison and
   // Explore drops the query. Collapse whitespace (multi-line PromQL), rison-escape
-  // `!`→`!!` then `'`→`!'` (order matters), and finally URL-encode for the hash.
-  const risonSafeQuery = promqlQuery
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/!/g, '!!')
-    .replace(/'/g, "!'");
+  // (order matters, handled by escapeRisonString), and finally URL-encode for the hash.
+  const risonSafeQuery = escapeRisonString(promqlQuery.replace(/\s+/g, ' ').trim());
   const q = `_q=(${dataset},language:PROMQL,query:'${encodeURIComponent(risonSafeQuery)}')`;
   const a = `_a=(ui:(metricsPageMode:query),tab:(),legacy:())`;
   const path = `metrics/#?${g}&${q}&${a}`;

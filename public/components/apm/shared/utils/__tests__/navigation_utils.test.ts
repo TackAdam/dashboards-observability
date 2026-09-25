@@ -613,6 +613,16 @@ describe('navigateToExploreMetrics (open in Discover metrics)', () => {
     // treats a lone `!` as an escape char → dropped query).
     expect(url).toContain(encodeURIComponent('a!!='));
   });
+
+  it("rison-escapes a connectionId containing ! and ' so the dataset is not dropped", () => {
+    navigateToExploreMetrics('up', "conn!'1", { from: 'now-15m', to: 'now' });
+
+    const url = windowOpenSpy.mock.calls[0][0];
+    // `!`→`!!` then `'`→`!'`; the id/title live in single-quoted rison strings, so
+    // an unescaped `'` would terminate the string early and Explore drops the dataset.
+    expect(url).toContain("id:'conn!!!'1'");
+    expect(url).toContain("title:'conn!!!'1'");
+  });
 });
 
 describe('openApmSettings (correlated dashboards, experimental)', () => {

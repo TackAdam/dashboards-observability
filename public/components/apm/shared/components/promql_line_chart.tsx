@@ -17,6 +17,22 @@ import { useApmCursorBus } from '../hooks/apm_cursor_context';
 import { navigateToExploreMetrics } from '../utils/navigation_utils';
 import './promql_line_chart.scss';
 
+/** Payload of the ECharts `brushEnd` event (only the fields we read). */
+interface BrushEndParams {
+  areas?: Array<{ coordRange?: number[] }>;
+}
+
+/** Payload of the ECharts `legendselectchanged` event (only the fields we read). */
+interface LegendSelectChangedParams {
+  name?: string;
+}
+
+/** zrender mouse event carrying canvas-relative offsets. */
+interface ZRenderMouseEvent {
+  offsetX: number;
+  offsetY: number;
+}
+
 export interface PromQLLineChartProps {
   title?: string;
   promqlQuery: string;
@@ -125,6 +141,18 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
   });
 
   const isResolutionExceeded = isResolutionExceededError(error);
+
+  // Resolve one stable display name per series, used BOTH for the ECharts series
+  // config and the legend-isolate handler. ECharts auto-generates names like
+  // `series0` for unnamed series, which would never match a `series-${i}` guess —
+  // so we assign these names explicitly on setOption to keep the two in lockstep.
+  const seriesNames = useMemo(
+    () =>
+      series.map((s, i) =>
+        seriesLabel && series.length === 1 ? seriesLabel : s.name || `series-${i}`
+      ),
+    [series, seriesLabel]
+  );
 
   // Default value formatter
   const defaultFormatValue = (value: number): string => {
@@ -321,12 +349,7 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
           }
         : {}),
       series: series.map((s, index) =>
-        createSeriesConfig(
-          seriesLabel && series.length === 1 ? { ...s, name: seriesLabel } : s,
-          index,
-          chartType,
-          color
-        )
+        createSeriesConfig({ ...s, name: seriesNames[index] }, index, chartType, color)
       ),
     };
 
@@ -350,7 +373,7 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
     formatTooltipValue,
     timeAxisConfig,
     color,
-    seriesLabel,
+    seriesNames,
     onTimeRangeChange,
   ]);
 
@@ -365,7 +388,7 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
     const zr = inst.getZr();
 
     // ---- Brush → time range (#2) ----
-    const onBrushEnd = (params: any) => {
+    const onBrushEnd = (params: BrushEndParams) => {
       const range = params?.areas?.[0]?.coordRange;
       if (
         range &&
@@ -374,7 +397,10 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
         range[1] != null &&
         onTimeRangeChange
       ) {
-        onTimeRangeChange(new Date(range[0]).toISOString(), new Date(range[1]).toISOString());
+        // ECharts reports coordRange in drag order, so a right-to-left drag yields
+        // range[0] > range[1]. Sort before converting so `from` is always <= `to`.
+        const [start, end] = range[0] <= range[1] ? range : [range[1], range[0]];
+        onTimeRangeChange(new Date(start).toISOString(), new Date(end).toISOString());
       }
     };
     if (onTimeRangeChange) {
@@ -385,10 +411,7 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
     // ---- Legend isolate on click (#7): hide others; re-click restores all ----
     let isolated: string | null = null;
     let applyingLegend = false;
-    const seriesNames = series.map((s, i) =>
-      seriesLabel && series.length === 1 ? seriesLabel : s.name || `series-${i}`
-    );
-    const onLegendChange = (params: any) => {
+    const onLegendChange = (params: LegendSelectChangedParams) => {
       if (applyingLegend) return;
       const clicked = params?.name;
       if (!clicked) return;
@@ -509,12 +532,19 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
 
       // Publish this chart's hovered position; the native tooltip/axisPointer
       // renders locally, so remote charts get only the overlay.
-      const onZrMouseMove = (e: any) => {
+      const onZrMouseMove = (e: ZRenderMouseEvent) => {
         const rect = getGridRect();
         if (!rect) return;
         const x = e.offsetX;
         const y = e.offsetY;
         if (x < rect.x || x > rect.x + rect.width || y < rect.y || y > rect.y + rect.height) {
+          // Pointer is on the canvas but outside the plot rect (legend/axis gutter).
+          // Clear our own hover so sibling broadcasts can drive this chart again, and
+          // tell siblings to drop their stale crosshair.
+          if (isLocalHoverRef.current) {
+            isLocalHoverRef.current = false;
+            cursorBus.publish(null);
+          }
           return;
         }
         const time = inst.convertFromPixel({ xAxisIndex: 0 }, x) as number;
@@ -562,7 +592,7 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
     cursorBus,
     onTimeRangeChange,
     showLegend,
-    seriesLabel,
+    seriesNames,
     color,
   ]);
 
@@ -593,8 +623,17 @@ export const PromQLLineChart: React.FC<PromQLLineChartProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Only surface the button once the chart is actually showing data — otherwise the
+  // absolutely-positioned control overlays the error/empty placeholder and can
+  // intercept clicks in that corner.
   const canOpenInMetrics =
-    showOpenInMetrics && Boolean(promqlQuery) && Boolean(prometheusConnectionId);
+    showOpenInMetrics &&
+    Boolean(promqlQuery) &&
+    Boolean(prometheusConnectionId) &&
+    showChart &&
+    !isLoading &&
+    !error &&
+    series.length > 0;
   const openInMetricsLabel = i18n.translate('observability.apm.promqlLineChart.openInMetrics', {
     defaultMessage: 'Open in Discover metrics',
   });
